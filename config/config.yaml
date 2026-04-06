@@ -1,0 +1,82 @@
+# === Project Configuration ===
+
+project:
+  name: "Cybersecurity Intrusion Detection"
+  version: "1.0.0"
+  random_seed: 42
+
+data:
+  path: "data/cybersecurity_intrusion_data.csv"
+  target: "attack_detected"
+  test_size: 0.2
+  id_column: "session_id"
+
+  categorical_features:
+    - protocol_type
+    - encryption_used
+    - browser_type
+
+  numerical_features:
+    - network_packet_size
+    - login_attempts
+    - session_duration
+    - ip_reputation_score
+    - failed_logins
+
+  binary_features:
+    - unusual_time_access
+
+preprocessing:
+  scaling: "standard"         # standard | minmax
+  encoding: "onehot"          # onehot | label
+  handle_imbalance: "smote"   # smote | class_weight | none
+
+models:
+  baselines:
+    logistic_regression:
+      max_iter: 1000
+      class_weight: "balanced"
+    random_forest:
+      n_estimators: 200
+      max_depth: 15
+      class_weight: "balanced"
+    xgboost:
+      n_estimators: 200
+      max_depth: 6
+      learning_rate: 0.1
+      scale_pos_weight: 1     # Adjust based on class imbalance
+
+  deep_learning:
+    dnn:
+      layers: [128, 64, 32]
+      dropout: 0.3
+      activation: "relu"
+      output_activation: "sigmoid"
+      optimizer: "adam"
+      learning_rate: 0.001
+      loss: "binary_crossentropy"
+      epochs: 100
+      batch_size: 32
+      early_stopping_patience: 10
+
+  ensemble:
+    voting: "soft"
+    stacking_meta_learner: "logistic_regression"
+
+evaluation:
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1_score
+    - roc_auc
+  cv_folds: 5
+
+mlflow:
+  experiment_name: "cybersecurity-ids"
+  tracking_uri: "mlruns"
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  model_path: "saved_models/best_model.joblib"

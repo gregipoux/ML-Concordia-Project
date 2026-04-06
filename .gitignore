@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+eggs/
+*.egg
+
+# Virtual environments
+venv/
+env/
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data (keep CSV tracked for this project, but ignore large files)
+data/*.zip
+data/*.tar.gz
+
+# MLflow
+mlruns/
+mlflow/mlruns/
+
+# Docker
+docker/*.tar
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Models (too large for git)
+*.h5
+*.pkl
+*.joblib
+saved_models/
+
+# Reports build artifacts
+reports/*.aux
+reports/*.log

@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  ids-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: cybersecurity-ids-api
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=saved_models/best_model.joblib
+      - PREPROCESSOR_PATH=saved_models/preprocessor.joblib
+    volumes:
+      - ../saved_models:/app/saved_models
+    restart: unless-stopped
+
+  mlflow:
+    image: python:3.10-slim
+    container_name: mlflow-tracking
+    ports:
+      - "5000:5000"
+    command: >
+      bash -c "pip install mlflow && mlflow server
+      --host 0.0.0.0 --port 5000
+      --backend-store-uri sqlite:///mlflow.db
+      --default-artifact-root ./mlruns"
+    volumes:
+      - ../mlflow:/app
+    working_dir: /app
+    restart: unless-stopped
