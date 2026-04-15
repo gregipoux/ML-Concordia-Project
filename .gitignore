@@ -47,3 +47,5 @@ saved_models/
 # Reports build artifacts
 reports/*.aux
 reports/*.log
+
+ADVANCED_USE_CASES.md
