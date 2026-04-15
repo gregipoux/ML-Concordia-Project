@@ -99,4 +99,3 @@ docker-compose up --build
 | QUERREC Thomas                     | Backend / DevOps |
 | Montenegro Loureiro  Marco-Antonio | Data Analyst |
 | Relut-Vainqueur  Xavier            | Research / Presentation |
-
