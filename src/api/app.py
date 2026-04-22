@@ -62,17 +62,30 @@ PREPROCESSOR_PATH = os.getenv("PREPROCESSOR_PATH", "saved_models/preprocessor.jo
 
 model = None
 preprocessor = None
+model_metadata: dict = {}
 
 
 @app.on_event("startup")
 async def load_model():
-    global model, preprocessor
+    """
+    Load champion artifact. Supports two formats:
+    - Bundle dict saved by notebook 05: {'model', 'preprocessor', 'champion_name', ...}
+    - Legacy: separate `best_model.joblib` + `preprocessor.joblib`
+    """
+    global model, preprocessor, model_metadata
     try:
-        model = joblib.load(MODEL_PATH)
-        preprocessor = joblib.load(PREPROCESSOR_PATH)
-        print(f"Model loaded from {MODEL_PATH}")
-    except FileNotFoundError:
-        print("WARNING: Model not found. Train the model first. API will return errors on /predict.")
+        bundle = joblib.load(MODEL_PATH)
+        if isinstance(bundle, dict) and "model" in bundle and "preprocessor" in bundle:
+            model = bundle["model"]
+            preprocessor = bundle["preprocessor"]
+            model_metadata = {k: v for k, v in bundle.items() if k not in ("model", "preprocessor")}
+        else:
+            model = bundle
+            preprocessor = joblib.load(PREPROCESSOR_PATH)
+            model_metadata = {}
+        print(f"Model loaded from {MODEL_PATH} ({type(model).__name__})")
+    except FileNotFoundError as e:
+        print(f"WARNING: Model not found ({e}). Train the model first. API will return errors on /predict.")
 
 
 # --- Endpoints ---
@@ -93,7 +106,10 @@ async def model_info():
     return {
         "model_type": type(model).__name__,
         "model_path": MODEL_PATH,
-        "features_expected": 10,
+        "features_expected": 9,
+        "champion_name": model_metadata.get("champion_name"),
+        "default_threshold": model_metadata.get("default_threshold", 0.5),
+        "training_metadata": model_metadata.get("metadata"),
     }
 
 
