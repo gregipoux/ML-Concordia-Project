@@ -1,9 +1,24 @@
 """
-FastAPI REST API for Cybersecurity Intrusion Detection.
-Serves predictions from the trained model.
+FastAPI service for Cybersecurity Intrusion Detection.
+
+Serves three things from a single process:
+  - POST /predict: the champion (Random Forest) bundled in saved_models/best_model.joblib
+  - GET  /ui:      a Gradio interactive UI (mounted at module bottom)
+  - GET  /health, /model/info: probes
+
+At startup we load two groups of artefacts:
+  1. The champion bundle: dict with keys {model, preprocessor, champion_name, ...}
+  2. The comparison models (LR, RF, XGBoost, DNN v2) produced by scripts/export_models.py.
+     These are kept separate so /predict stays backed by the champion only, while the
+     Gradio UI can display all four side-by-side on every prediction.
+
+The DNN is stored as weights (.weights.h5) plus an architecture descriptor, because
+the full .keras format is Keras-minor-version sensitive; we rebuild the Sequential
+at load time and call load_weights.
 """
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from typing import Optional
 import joblib
@@ -64,6 +79,11 @@ model = None
 preprocessor = None
 model_metadata: dict = {}
 
+# Comparison models loaded alongside the champion for the UI's side-by-side view.
+# Kept separate from `model` so /predict stays backed by the champion bundle only.
+comparison_models: dict = {}
+comparison_metadata: dict = {}
+
 
 @app.on_event("startup")
 async def load_model():
@@ -87,8 +107,56 @@ async def load_model():
     except FileNotFoundError as e:
         print(f"WARNING: Model not found ({e}). Train the model first. API will return errors on /predict.")
 
+    _load_comparison_models()
+
+
+def _load_comparison_models():
+    """
+    Load the 4 comparison models produced by scripts/export_models.py.
+    Missing files are tolerated — the UI hides the comparison section if any is absent.
+    """
+    global comparison_models, comparison_metadata
+    saved = os.path.dirname(MODEL_PATH) or "saved_models"
+
+    try:
+        comparison_models["Logistic Regression"] = joblib.load(os.path.join(saved, "lr.joblib"))
+        comparison_models["Random Forest"] = joblib.load(os.path.join(saved, "rf.joblib"))
+        comparison_models["XGBoost"] = joblib.load(os.path.join(saved, "xgb.joblib"))
+    except FileNotFoundError as e:
+        print(f"WARNING: comparison model missing ({e}). Run scripts/export_models.py.")
+        return
+
+    try:
+        arch_meta = joblib.load(os.path.join(saved, "dnn_arch.joblib"))
+        from tensorflow.keras import layers, models
+        dnn = models.Sequential([
+            layers.Input(shape=(arch_meta["n_features"],)),
+            layers.Dense(128, activation="relu"),
+            layers.Dropout(0.3),
+            layers.Dense(64, activation="relu"),
+            layers.Dropout(0.3),
+            layers.Dense(32, activation="relu"),
+            layers.Dense(1, activation="sigmoid"),
+        ])
+        dnn.load_weights(os.path.join(saved, "dnn.weights.h5"))
+        comparison_models["DNN v2"] = dnn
+    except Exception as e:
+        print(f"WARNING: DNN not loaded ({e}). Comparison UI will show 3 models instead of 4.")
+
+    try:
+        comparison_metadata = joblib.load(os.path.join(saved, "comparison_metadata.joblib"))
+    except FileNotFoundError:
+        comparison_metadata = {}
+
+    print(f"Comparison models loaded: {list(comparison_models.keys())}")
+
 
 # --- Endpoints ---
+
+@app.get("/", include_in_schema=False)
+async def root():
+    return RedirectResponse(url="/ui")
+
 
 @app.get("/health")
 async def health():
@@ -148,6 +216,15 @@ async def predict(session: SessionInput):
         label="Attack Detected" if prediction == 1 else "Normal Traffic",
         risk_level=risk_level,
     )
+
+
+# --- Gradio UI mount ---
+# Imported after endpoints so the Gradio module can reference `model` / `preprocessor`
+# via lazy import at callback time.
+import gradio as gr  # noqa: E402
+from src.ui.gradio_app import build_demo  # noqa: E402
+
+app = gr.mount_gradio_app(app, build_demo(), path="/ui")
 
 
 if __name__ == "__main__":
