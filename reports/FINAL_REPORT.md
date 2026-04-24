@@ -1,15 +1,22 @@
 ---
 title: "Cybersecurity Intrusion Detection — Final Report"
-author: "BELLEPERCHE Grégoire · QUERREC Thomas · Montenegro Loureiro Marco-Antonio · Relut-Vainqueur Xavier"
+author:
+- "BELLEPERCHE Grégoire"
+- "QUERREC Thomas"
+- "Montenegro Loureiro Marco-Antonio"
+- "Relut-Vainqueur Xavier"
 date: "29/04/2026"
+classoption:
+- titlepage
 ---
 
-**Course:** MOD10 Machine Learning — Winter 2026 — Concordia
-**Instructor:** Mohammed A. Shehab
-**Group:** 07
-**Project:** Cybersecurity Intrusion Detection — ML + DL + Docker deployment
+\newpage
 
----
+- **Course:** MOD10 Machine Learning — Winter 2026 — Concordia
+- **Instructor:** Mohammed A. Shehab
+- **Group:** 07
+- **Repository:** <https://github.com/gregipoux/ML-Concordia-Project>
+- **Project:** Cybersecurity Intrusion Detection — ML + DL + Docker deployment
 
 ## Introduction
 
