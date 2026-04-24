@@ -38,11 +38,13 @@ docker/*.tar
 .DS_Store
 Thumbs.db
 
-# Models (too large for git)
+# Models — the saved_models/ bundle is committed so `docker compose up -d`
+# works on a fresh clone / ZIP without a training step. Other .h5 / .pkl
+# (notebook checkpoints, TF snapshots elsewhere in the repo) stay out.
 *.h5
 *.pkl
-*.joblib
-saved_models/
+!saved_models/best_model.joblib
+!saved_models/dnn.weights.h5
 
 # Reports build artifacts
 reports/*.aux

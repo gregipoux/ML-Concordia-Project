@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   ids-api:
     build:
@@ -12,20 +10,41 @@ services:
       - MODEL_PATH=saved_models/best_model.joblib
       - PREPROCESSOR_PATH=saved_models/preprocessor.joblib
     volumes:
-      - ../saved_models:/app/saved_models
+      - ../saved_models:/app/saved_models:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     restart: unless-stopped
 
+  # Optional — start with `docker compose --profile tools up mlflow`
+  # Known limit: existing runs have absolute Windows artifact_uri in their
+  # meta.yaml, so the UI shows metrics but can't open artifacts from the
+  # container. New runs logged from inside a container will work correctly.
   mlflow:
     image: python:3.10-slim
     container_name: mlflow-tracking
+    profiles: ["tools"]
     ports:
       - "5000:5000"
-    command: >
-      bash -c "pip install mlflow && mlflow server
-      --host 0.0.0.0 --port 5000
-      --backend-store-uri sqlite:///mlflow.db
-      --default-artifact-root ./mlruns"
+    working_dir: /mlflow
     volumes:
-      - ../mlflow:/app
-    working_dir: /app
+      - ../mlruns:/mlflow/mlruns
+    command:
+      - bash
+      - -c
+      - |
+        pip install --no-cache-dir 'mlflow==2.17.0' && \
+        mlflow server \
+          --host 0.0.0.0 --port 5000 \
+          --backend-store-uri file:/mlflow/mlruns \
+          --default-artifact-root file:/mlflow/mlruns
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
     restart: unless-stopped
