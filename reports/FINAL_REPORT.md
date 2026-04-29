@@ -36,7 +36,7 @@ Rather than chasing the highest single metric, we organised the project as a cha
 
 ### Stack
 
-Imposed by scope and by our team's prior experience:
+We use:
 
 - **Python 3.10+**, `pandas`, `numpy`, `scikit-learn` (pinned to 1.7.2 for cross-version reproducibility)
 - **TensorFlow / Keras** for the DNN
@@ -73,7 +73,7 @@ The two classes sit at **Normal 5 273 (55.3%)** vs **Attack 4 264 (44.7%)**, a r
 
 ![Boxplots of the same five features per class. The previous insights are confirmed: failed_logins and ip_reputation_score are the only two numerical features with meaningfully different distributions between classes.](figures/03_boxplots_by_class.png)
 
-The story these two figures tell is simple and robust. `failed_logins` and `ip_reputation_score` are the only two numerical features where the distributions of the two classes visibly diverge. `network_packet_size` and `session_duration` are essentially overlapping between classes, which motivates the engineered `packet_rate` feature in Section 2.6. We decided early on that any model doing significantly better than a baseline that only used these two features would have to be extracting non-linear interactions.
+These two figures tell a clear story. `failed_logins` and `ip_reputation_score` are the only two numerical features where the distributions of the two classes visibly diverge. `network_packet_size` and `session_duration` are essentially overlapping between classes, which motivates the engineered `packet_rate` feature in Section 2.6. We decided early on that any model doing significantly better than a baseline that only used these two features would have to be extracting non-linear interactions.
 
 ### Categorical features — the `browser = Unknown` finding — Figure 4
 
@@ -81,7 +81,7 @@ The story these two figures tell is simple and robust. `failed_logins` and `ip_r
 
 This figure is the single most interesting result of the EDA phase. Protocol and encryption choices carry essentially no signal on their own (41–46% attack rate across modalities). But `browser_type = Unknown` — which in practice covers bots, `curl`, scripts, and anything that doesn't present a recognised User-Agent — has a **73% attack rate**, close to 1.7× the baseline.
 
-We kept Unknown as a separate one-hot category rather than bucketing it with "Other", and in the SHAP analysis we confirmed that `browser_Unknown` is consistently in the top features every tree-based model relies on. We considered this the project's first real insight beyond "tune a classifier".
+We kept Unknown as a separate one-hot category rather than bucketing it with "Other", and in the SHAP analysis we confirmed that `browser_Unknown` is consistently in the top features every tree-based model relies on. This was the EDA's most actionable finding.
 
 ### Correlation structure — Figures 5 and 6
 
@@ -192,11 +192,11 @@ We tried a soft `VotingClassifier` (LR + RF + XGBoost) and a `StackingClassifier
 | Voting (soft, 3 models)  |   0.8863 | 0.8543 | 0.8762 |
 | Stacking (LR meta)       |   0.8857 | 0.8543 | 0.8840 |
 
-Both ensembles gained **0.0007 F1 points at most** over the single Random Forest while tripling the inference time and doubling the artefact size. We concluded that ensembles did not pay their complexity cost on this problem and **did not deploy them**. This decision is documented because ensemble-by-default is a common reflex that we wanted to push back on with data.
+Both ensembles gained **0.0007 F1 points at most** over the single Random Forest while tripling the inference time and doubling the artefact size. We concluded that ensembles did not pay their complexity cost on this problem and **did not deploy them**.
 
 ### Champion selection
 
-We deployed **Random Forest** as the champion. The justification, which we rehearsed for the demo:
+We deployed **Random Forest** as the champion. Justification:
 
 - **Highest F1 on the test set** (0.855) — the primary metric we chose at the start of Section 4.
 - **Perfect precision on Attack** (1.00 vs 0.99 for XGBoost) — zero false positives, which matters operationally.
@@ -215,7 +215,7 @@ The champion model, preprocessor, default threshold (0.5), and training metadata
 Our primary metric is **F1 score on the Attack class**. Two reasons:
 
 - The dataset is mildly imbalanced (1.24:1), so raw accuracy gives a slight reward to models that lean toward the majority class.
-- In an IDS, a false negative (missed attack) is operationally worse than a false positive (extra alert). Recall on Attack is therefore our sentinel.
+- In an IDS, a false negative (missed attack) is operationally worse than a false positive (extra alert). Recall on Attack is therefore the metric we watched most closely.
 
 We also reported accuracy, precision, recall, ROC-AUC, PR-AUC, and inference time per sample in every MLflow run.
 
@@ -257,7 +257,7 @@ The F1 curve is essentially flat, peaking at t = 0.65 with a 0.0004 gain over th
 
 ### Method choice
 
-We used **SHAP TreeExplainer** on our tree-based champions (Random Forest and XGBoost). For the DNN we used **KernelExplainer** on a 100-sample background, but the results were too noisy to be actionable in the time budget, and Tree SHAP was orders of magnitude faster (~1 ms vs ~10 s per prediction). Given that our champion is Random Forest, Tree SHAP also happens to be what powers the live explanation in the deployed UI.
+We used **SHAP TreeExplainer** on our tree-based champions (Random Forest and XGBoost). For the DNN we used **KernelExplainer** on a 100-sample background, but the results were too noisy to be useful in practice, and Tree SHAP was orders of magnitude faster (~1 ms vs ~10 s per prediction). Given that our champion is Random Forest, Tree SHAP also happens to be what powers the live explanation in the deployed UI.
 
 ### Global SHAP — Figures 13, 14, 19
 
@@ -319,7 +319,7 @@ The DNN was saved as **weights only** (`dnn.weights.h5`) plus a minimal `dnn_arc
 
 ### The Gradio UI — live SHAP and 4-model comparison
 
-The UI has three parts, all on one page, and is the piece we are most proud of:
+The UI has three parts on one page:
 
 1. **A 9-feature input form** with sliders, dropdowns, and three one-click presets (Normal traffic, Obvious attack, Edge case).
 2. **The champion verdict** in a coloured banner — label, probability, and risk level (LOW/MEDIUM/HIGH/CRITICAL).
@@ -341,10 +341,10 @@ docker compose up -d
 
 No `pip install`, no model training, no manual file copying. `saved_models/` is committed (three `.joblib`, one `.h5`, one `.joblib` arch descriptor, one metadata file, one champion bundle) so that `docker compose up -d` works from a fresh clone or from the ZIP we submitted, without any preparatory step.
 
-Two Dockerfile decisions are worth noting:
+Two Dockerfile decisions:
 
 - **Ordered COPY:** `requirements.txt` is copied before `src/`, so the slow pip install layer (~3 minutes for TensorFlow, XGBoost, SHAP, MLflow, Gradio) is cached when only our code changes. This takes rebuild time from ~3 minutes to ~5 seconds for iterative development.
-- **Read-only model mount:** the container mounts `saved_models/` as `:ro` because the API never writes model files, and we wanted to close that write vector.
+- **Read-only model mount:** the container mounts `saved_models/` as `:ro` because the API never writes model files, and we wanted to keep that path read-only.
 
 ### MLflow tracking
 
@@ -355,7 +355,7 @@ Every training run in notebooks 02, 03 and 05 calls `mlflow.start_run()` inside 
 - **Per-epoch metrics for the DNN:** `loss`, `val_loss`, `accuracy`, `val_accuracy`
 - **Artifacts:** confusion matrix PNG, serialised model
 
-This gave us ten runs across the project that we could sort by F1 in the UI and compare side by side. We deliberately kept MLflow out of the `docker compose up -d` default path because (a) the evaluation only touches the one service that serves the model, and (b) the run `meta.yaml` files contain absolute Windows paths for artefacts, which would not resolve inside a Linux container. MLflow is available locally via `mlflow ui` from the `repo/` directory if a reader of this report wants to inspect the runs.
+This gave us ten runs across the project that we could sort by F1 in the UI and compare side by side. We deliberately kept MLflow out of the `docker compose up -d` default path because (a) the evaluation only touches the one service that serves the model, and (b) the run `meta.yaml` files contain absolute Windows paths for artefacts, which would not resolve inside a Linux container. MLflow is available locally via `mlflow ui` from the `repo/` directory to inspect the runs.
 
 ---
 
@@ -392,7 +392,7 @@ This gave us ten runs across the project that we could sort by F1 in the UI and 
 
 We set out to build an interpretable, deployable intrusion detection model, and the final deliverable is closer to "defensible" than "best-in-class" — which we argue is the right mode for this problem and this data. The dataset's feature set imposes a performance ceiling around F1 = 0.855 and recall = 0.745, and within that ceiling all four of our non-trivial models converge to the same place. We deployed the one that was fastest and simplest to serve, backed the choice with four candidate models running side by side in the UI, and made every prediction self-explanatory with a live SHAP waterfall. The full project launches with `docker compose up -d` and opens at `http://localhost:8000`.
 
-The most useful thing we leave behind is not the champion F1, but the honest picture of why it sits where it does — and a UI that surfaces that picture in five seconds rather than five pages.
+What outlives the F1 number is the honest account of why it plateaus there — and a UI that makes that account visible at first click.
 
 ---
 

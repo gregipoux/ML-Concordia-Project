@@ -199,7 +199,7 @@ the previous step:
 
 \subsection{Stack}\label{stack}
 
-Imposed by scope and by our team's prior experience:
+We use:
 
 \begin{itemize}
 \tightlist
@@ -298,7 +298,7 @@ only two numerical features with meaningfully different distributions
 between classes.}
 \end{figure}
 
-The story these two figures tell is simple and robust.
+These two figures tell a clear story.
 \texttt{failed\_logins} and \texttt{ip\_reputation\_score} are the only
 two numerical features where the distributions of the two classes
 visibly diverge. \texttt{network\_packet\_size} and
@@ -331,8 +331,7 @@ baseline.
 We kept Unknown as a separate one-hot category rather than bucketing it
 with ``Other'', and in the SHAP analysis we confirmed that
 \texttt{browser\_Unknown} is consistently in the top features every
-tree-based model relies on. We considered this the project's first real
-insight beyond ``tune a classifier''.
+tree-based model relies on. This was the EDA's most actionable finding.
 
 \subsection{Correlation structure --- Figures 5 and
 6}\label{correlation-structure-figures-5-and-6}
@@ -673,14 +672,11 @@ Stacking (LR meta) & 0.8857 & 0.8543 & 0.8840 \\
 Both ensembles gained \textbf{0.0007 F1 points at most} over the single
 Random Forest while tripling the inference time and doubling the
 artefact size. We concluded that ensembles did not pay their complexity
-cost on this problem and \textbf{did not deploy them}. This decision is
-documented because ensemble-by-default is a common reflex that we wanted
-to push back on with data.
+cost on this problem and \textbf{did not deploy them}.
 
 \subsection{Champion selection}\label{champion-selection}
 
-We deployed \textbf{Random Forest} as the champion. The justification,
-which we rehearsed for the demo:
+We deployed \textbf{Random Forest} as the champion. Justification:
 
 \begin{itemize}
 \tightlist
@@ -723,8 +719,7 @@ reasons:
   slight reward to models that lean toward the majority class.
 \item
   In an IDS, a false negative (missed attack) is operationally worse
-  than a false positive (extra alert). Recall on Attack is therefore our
-  sentinel.
+  than a false positive (extra alert). Recall on Attack is therefore the metric we watched most closely.
 \end{itemize}
 
 We also reported accuracy, precision, recall, ROC-AUC, PR-AUC, and
@@ -830,8 +825,7 @@ Explainability}\label{interpretability-and-explainability}
 
 We used \textbf{SHAP TreeExplainer} on our tree-based champions (Random
 Forest and XGBoost). For the DNN we used \textbf{KernelExplainer} on a
-100-sample background, but the results were too noisy to be actionable
-in the time budget, and Tree SHAP was orders of magnitude faster
+100-sample background, but the results were too noisy to be useful in practice, and Tree SHAP was orders of magnitude faster
 (\textasciitilde1 ms vs \textasciitilde10 s per prediction). Given that
 our champion is Random Forest, Tree SHAP also happens to be what powers
 the live explanation in the deployed UI.
@@ -1007,8 +1001,7 @@ load a host-saved model inside the container.
 \subsection{The Gradio UI --- live SHAP and 4-model
 comparison}\label{the-gradio-ui-live-shap-and-4-model-comparison}
 
-The UI has three parts, all on one page, and is the piece we are most
-proud of:
+The UI has three parts on one page:
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -1064,7 +1057,7 @@ one champion bundle) so that \texttt{docker\ compose\ up\ -d} works from
 a fresh clone or from the ZIP we submitted, without any preparatory
 step.
 
-Two Dockerfile decisions are worth noting:
+Two Dockerfile decisions:
 
 \begin{itemize}
 \tightlist
@@ -1077,7 +1070,7 @@ Two Dockerfile decisions are worth noting:
 \item
   \textbf{Read-only model mount:} the container mounts
   \texttt{saved\_models/} as \texttt{:ro} because the API never writes
-  model files, and we wanted to close that write vector.
+  model files, and we wanted to keep that path read-only.
 \end{itemize}
 
 \subsection{MLflow tracking}\label{mlflow-tracking}
@@ -1107,9 +1100,7 @@ UI and compare side by side. We deliberately kept MLflow out of the
 \texttt{docker\ compose\ up\ -d} default path because (a) the evaluation
 only touches the one service that serves the model, and (b) the run
 \texttt{meta.yaml} files contain absolute Windows paths for artefacts,
-which would not resolve inside a Linux container. MLflow is available
-locally via \texttt{mlflow\ ui} from the \texttt{repo/} directory if a
-reader of this report wants to inspect the runs.
+which would not resolve inside a Linux container. MLflow is available locally via \texttt{mlflow\ ui} from the \texttt{repo/} directory to inspect the runs.
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
@@ -1251,9 +1242,7 @@ prediction self-explanatory with a live SHAP waterfall. The full project
 launches with \texttt{docker\ compose\ up\ -d} and opens at
 \texttt{http://localhost:8000}.
 
-The most useful thing we leave behind is not the champion F1, but the
-honest picture of why it sits where it does --- and a UI that surfaces
-that picture in five seconds rather than five pages.
+What outlives the F1 number is the honest account of why it plateaus there --- and a UI that makes that account visible at first click.
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 

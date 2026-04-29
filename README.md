@@ -147,11 +147,11 @@ docker run --rm -v "$(pwd):/data" -w /data pandoc/latex:3.1 \
     -V documentclass=article -V geometry:margin=2cm -V papersize:a4 -V fontsize:11pt
 ```
 
-Key design decisions, documented here so every team member can defend them in the individual evaluation:
+Key design decisions:
 
-- **`scikit-learn==1.7.2` is pinned** because Logistic Regression serialised with 1.8 crashes in 1.7 (the `multi_class` attribute was removed). Pinning the minor version prevents host/container drift.
+- **`scikit-learn==1.7.2` is pinned** because Logistic Regression serialised with 1.8 crashes in 1.7 (the `multi_class` attribute was removed).
 - **DNN is serialised as weights + architecture descriptor**, not as a full `.keras` file, because the `.keras` format is sensitive to Keras minor versions (we hit a `quantization_config` incompatibility). `scripts/export_models.py` saves `dnn.weights.h5` and a one-line `dnn_arch.joblib`; the API reconstructs the same `Sequential` model and calls `load_weights` at startup.
-- **`saved_models/` is committed**, which is non-standard. We chose this so a grader can run `docker compose up -d` straight from the ZIP without any preparatory step. Only `best_model.joblib` and the seven comparison artefacts are tracked; other `.joblib`/`.pkl` files remain gitignored.
+- **`saved_models/` is committed**, which is non-standard. We chose this so anyone can run `docker compose up -d` straight from the ZIP without any preparatory step. Only `best_model.joblib` and the seven comparison artefacts are tracked; other `.joblib`/`.pkl` files remain gitignored.
 - **`mlruns/` is gitignored.** The run artefacts reference absolute host paths, so including them would produce broken links on any other machine. The figures we care about are exported to `reports/figures/`.
 - **The Gradio UI is mounted on FastAPI, not a separate container.** This keeps one process, one memory footprint, and zero internal HTTP hops. The model and the SHAP explainer are shared between the REST API and the interactive UI.
 
@@ -163,8 +163,6 @@ Key design decisions, documented here so every team member can defend them in th
 | QUERREC Thomas                    | Backend / DevOps (preprocessing, FastAPI, Docker) |
 | Montenegro Loureiro Marco-Antonio | Data Analyst (EDA, metrics, report writing)   |
 | Relut-Vainqueur Xavier            | Research / Presentation (feature eng, SHAP, slides) |
-
-Every team member has read and can modify every part of this codebase. The per-notebook sessions we ran before submission cover preprocessing, the four baselines, the DNN, SHAP, deployment and the UI.
 
 ## Dataset
 
