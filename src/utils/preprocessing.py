@@ -9,7 +9,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, OneHotEncoder, LabelEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from imblearn.over_sampling import SMOTE
 import yaml
 import os
 
@@ -124,8 +123,12 @@ def prepare_data(config: dict, apply_smote: bool = True):
     X_train_processed = preprocessor.fit_transform(X_train)
     X_test_processed = preprocessor.transform(X_test)
 
-    # Apply SMOTE if configured and requested
+    # Apply SMOTE if configured and requested. We did not use it in the final
+    # pipeline (the 1.24:1 imbalance is handled via class_weight on LR/RF and
+    # scale_pos_weight on XGBoost). The import is lazy so imbalanced-learn is
+    # not required at runtime for code paths that do not call SMOTE.
     if apply_smote and config["preprocessing"]["handle_imbalance"] == "smote":
+        from imblearn.over_sampling import SMOTE
         smote = SMOTE(random_state=config["project"]["random_seed"])
         X_train_processed, y_train = smote.fit_resample(X_train_processed, y_train)
         print(f"SMOTE applied. Training set: {X_train_processed.shape[0]} samples")

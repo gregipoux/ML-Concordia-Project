@@ -29,7 +29,7 @@ data:
 preprocessing:
   scaling: "standard"         # standard | minmax
   encoding: "onehot"          # onehot | label
-  handle_imbalance: "smote"   # smote | class_weight | none
+  handle_imbalance: "class_weight"   # smote | class_weight | none
 
 models:
   baselines:
