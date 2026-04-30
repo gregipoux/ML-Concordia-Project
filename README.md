@@ -1,9 +1,9 @@
-# Cybersecurity Intrusion Detection — ML Project
+# Cybersecurity Intrusion Detection (ML Project)
 
-**MOD10 Machine Learning — Winter 2026 — Concordia**
+**MOD10 Machine Learning, Winter 2026, Concordia**
 **Instructor:** Mohammed A. Shehab &nbsp;·&nbsp; **Group 07** &nbsp;·&nbsp; **Team of 4**
 
-Binary intrusion detector trained on the Kaggle *Cybersecurity Intrusion Detection* dataset (9 537 sessions, 9 features). Random Forest champion (F1 = 0.855 on held-out test set), deployed through a FastAPI service with a Gradio UI that shows live SHAP explanations and a side-by-side comparison of four candidate models. Everything launches with a single `docker compose up -d`.
+Binary intrusion detector trained on the Kaggle *Cybersecurity Intrusion Detection* dataset (9 537 sessions, 9 features). Random Forest is our deployed champion (F1 = 0.855 on the held-out test set). It is served through a FastAPI service with a Gradio UI that shows live SHAP explanations and a side-by-side comparison of four candidate models. Everything launches with a single `docker compose up -d`.
 
 ## Quick start
 
@@ -14,7 +14,7 @@ docker compose up -d
 open http://localhost:8000     # or just visit it in any browser
 ```
 
-That's the full deployment contract. No `pip install`, no model training, no manual downloads. Pre-fitted model artefacts are committed to `saved_models/` so the container is ready on first boot.
+That is the full deployment contract. No `pip install`, no model training, no manual downloads. Pre-fitted model artefacts are committed to `saved_models/` so the container is ready on first boot.
 
 The full report is at [`reports/FINAL_REPORT.pdf`](reports/FINAL_REPORT.pdf) (24 pages, 21 figures). The Markdown source is `reports/FINAL_REPORT.md` and the LaTeX is `reports/FINAL_REPORT.tex`.
 
@@ -67,11 +67,11 @@ repo/
 
 A single `python:3.10-slim`-based image launches `uvicorn src.api.app:app`. The FastAPI app does three things:
 
-1. **REST API:** `POST /predict` takes a JSON session, returns `{prediction, probability, label, risk_level}`. `GET /health` for probes, `GET /model/info` for metadata.
-2. **Gradio UI** mounted at `/ui` via `gr.mount_gradio_app()`. Same process, same loaded model, zero network hop between UI and inference.
-3. **Root redirect** (`/` → `/ui`) so a user opening `http://localhost:8000` lands directly on the interactive page.
+1. **REST API.** `POST /predict` takes a JSON session and returns `{prediction, probability, label, risk_level}`. `GET /health` for probes, `GET /model/info` for metadata.
+2. **Gradio UI** mounted at `/ui` via `gr.mount_gradio_app()`. Same process, same loaded model, no network hop between UI and inference.
+3. **Root redirect** (`/` to `/ui`) so a user opening `http://localhost:8000` lands directly on the interactive page.
 
-The Gradio UI ships with three one-click presets (**Normal traffic**, **Obvious attack**, **Edge case**) that showcase the champion's behaviour, a live SHAP waterfall for every prediction, and a side-by-side comparison of four models (LR, RF ★ champion, XGBoost, DNN v2). Each card in the comparison shows the current-sample probability **and** the model's global F1 on the test set, making the champion choice self-explanatory even when the per-sample probabilities are close.
+The Gradio UI ships with three one-click presets (**Normal traffic**, **Obvious attack**, **Edge case**) that showcase the champion's behaviour, a live SHAP waterfall for every prediction, and a side-by-side comparison of four models (LR, RF ★ champion, XGBoost, DNN v2). Each card shows the current-sample probability *and* the model's global F1 on the test set, which makes the champion choice self-explanatory even when the per-sample probabilities are close.
 
 ## API endpoints
 
@@ -150,10 +150,10 @@ docker run --rm -v "$(pwd):/data" -w /data pandoc/latex:3.1 \
 Key design decisions:
 
 - **`scikit-learn==1.7.2` is pinned** because Logistic Regression serialised with 1.8 crashes in 1.7 (the `multi_class` attribute was removed).
-- **DNN is serialised as weights + architecture descriptor**, not as a full `.keras` file, because the `.keras` format is sensitive to Keras minor versions (we hit a `quantization_config` incompatibility). `scripts/export_models.py` saves `dnn.weights.h5` and a one-line `dnn_arch.joblib`; the API reconstructs the same `Sequential` model and calls `load_weights` at startup.
+- **The DNN is serialised as weights plus an architecture descriptor**, not as a full `.keras` file, because the `.keras` format is sensitive to Keras minor versions (we hit a `quantization_config` incompatibility). `scripts/export_models.py` saves `dnn.weights.h5` and a one-line `dnn_arch.joblib`; the API reconstructs the same `Sequential` model and calls `load_weights` at startup.
 - **`saved_models/` is committed**, which is non-standard. We chose this so anyone can run `docker compose up -d` straight from the ZIP without any preparatory step. Only `best_model.joblib` and the seven comparison artefacts are tracked; other `.joblib`/`.pkl` files remain gitignored.
 - **`mlruns/` is gitignored.** The run artefacts reference absolute host paths, so including them would produce broken links on any other machine. The figures we care about are exported to `reports/figures/`.
-- **The Gradio UI is mounted on FastAPI, not a separate container.** This keeps one process, one memory footprint, and zero internal HTTP hops. The model and the SHAP explainer are shared between the REST API and the interactive UI.
+- **The Gradio UI is mounted on FastAPI, not in a separate container.** This keeps one process, one memory footprint, and no internal HTTP hops. The model and the SHAP explainer are shared between the REST API and the interactive UI.
 
 ## Team and roles
 
