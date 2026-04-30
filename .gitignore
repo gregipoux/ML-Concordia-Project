@@ -50,4 +50,8 @@ Thumbs.db
 reports/*.aux
 reports/*.log
 
+# Submission artifacts (generated outside the repo via git archive)
+*.zip
+!data/*.csv
+
 ADVANCED_USE_CASES.md
