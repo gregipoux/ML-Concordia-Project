@@ -372,7 +372,7 @@ This gave us ten runs across the project that we can sort by F1 in the UI and co
 
 ### Key takeaways
 
-- **Measure the ceiling before chasing it.** The moment every non-trivial model landed within 0.01 F1 of the others, we stopped tuning and started investigating *why*. The "why" (recall plateau at 0.745 across the board) is a more useful finding for the report than a 0.001 F1 improvement from a GridSearchCV sweep would have been.
+- **Stop tuning when you hit a plateau, look at the data instead.** Once every non-trivial model landed within 0.01 F1 of the others, we stopped tweaking hyperparameters and started looking at the recall ceiling itself. Reporting *why* the metric plateaus at 0.745 is a more useful contribution than a 0.001 F1 improvement from another GridSearchCV sweep.
 - **Engineered features earn their place or they do not.** Three of our four engineered features ranked in the top six by correlation with the target. `packet_rate` did not. We kept it anyway because it is cheap to compute and a tree model can still exploit it through interactions.
 - **Trees beat DL on tabular data of this size.** We trained 4 DNN variants with proper regularisation, and none of them matched Random Forest. This is consistent with the recent literature ([Grinsztajn et al. 2022](https://arxiv.org/abs/2207.08815)) and with common experience. DL shines on unstructured data (images, audio, text) where automatic feature extraction is the whole value proposition. On a 22-column tabular problem with engineered features that already do the heavy lifting, a gradient-boosted or bagged ensemble is the right tool.
 - **Interpretability belongs in the deployed product.** A SHAP waterfall that shows up *inside the prediction UI* makes the explainability argument every time a user clicks Predict. A SHAP summary plot in a static report is a one-off the reader forgets.
@@ -391,7 +391,7 @@ This gave us ten runs across the project that we can sort by F1 in the UI and co
 
 We set out to build an interpretable, deployable intrusion detection model. The final deliverable is closer to "defensible" than "best-in-class", and we think that is the right mode for this problem and this data. The dataset's feature set imposes a performance ceiling around F1 = 0.855 and recall = 0.745, and within that ceiling all four of our non-trivial models converge to the same place. We deployed the one that was fastest and simplest to serve, backed the choice with four candidate models running side by side in the UI, and made every prediction self-explanatory with a live SHAP waterfall. The full project launches with `docker compose up -d` and opens at `http://localhost:8000`.
 
-If anything sticks beyond the F1 number, we hope it is the account of why the metric plateaus where it does, and the UI that makes that account visible at first click.
+Beyond the F1 number, the part of the project we would want to highlight is the reasoning around why it plateaus where it does, and the UI that surfaces that reasoning on every click.
 
 ---
 

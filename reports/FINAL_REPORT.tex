@@ -1032,12 +1032,12 @@ Observations}\label{reflections-and-observations}
 \begin{itemize}
 \tightlist
 \item
-  \textbf{Measure the ceiling before chasing it.} The moment every
-  non-trivial model landed within 0.01 F1 of the others, we stopped
-  tuning and started investigating \emph{why}. The ``why'' (recall
-  plateau at 0.745 across the board) is a more useful finding for the
-  report than a 0.001 F1 improvement from a GridSearchCV sweep would
-  have been.
+  \textbf{Stop tuning when you hit a plateau, look at the data instead.}
+  Once every non-trivial model landed within 0.01 F1 of the others, we
+  stopped tweaking hyperparameters and started looking at the recall
+  ceiling itself. Reporting \emph{why} the metric plateaus at 0.745 is a
+  more useful contribution than a 0.001 F1 improvement from another
+  GridSearchCV sweep.
 \item
   \textbf{Engineered features earn their place or they do not.} Three of
   our four engineered features ranked in the top six by correlation with
@@ -1116,9 +1116,9 @@ prediction self-explanatory with a live SHAP waterfall. The full project
 launches with \texttt{docker\ compose\ up\ -d} and opens at
 \texttt{http://localhost:8000}.
 
-If anything sticks beyond the F1 number, we hope it is the account of
-why the metric plateaus where it does, and the UI that makes that
-account visible at first click.
+Beyond the F1 number, the part of the project we would want to highlight
+is the reasoning around why it plateaus where it does, and the UI that
+surfaces that reasoning on every click.
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
